@@ -1,63 +1,132 @@
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import { Button, FlatList, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Button,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+
+interface ITodo {
+  id: number;
+  name: string;
+}
 
 export default function App() {
-  const [student, setStudent] = useState([
-    {id : 1, name : "Hán Thanh 1", age : 20},
-    {id : 2, name : "Hán Thanh 2", age : 21},
-    {id : 3, name : "Hán Thanh 3", age : 22},
-    {id : 4, name : "Hán Thanh 4", age : 23},
-    {id : 5, name : "Hán Thanh 5", age : 24},
-    {id : 6, name : "Hán Thanh 6", age : 25},
-    {id : 7, name : "Hán Thanh 7", age : 26},
-    {id : 8, name : "Hán Thanh 8", age : 27},
-    {id : 9, name : "Hán Thanh 9", age : 28},
-    {id : 10, name : "Hán Thanh 10", age : 29},
-  ]);
+  const [todo, setTodo] = useState("");
+  const [listTodo, setListTodo] = useState<ITodo[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null); // Trạng thái lưu id của mục đang chỉnh sửa
+
+  const genIdNumber = () => {
+    return Math.floor(Math.random() * 1000000000); // tạo số từ 0 đến 999999999
+  };
+
+  const handleAddTodo = () => {
+    if (!todo) {
+      alert("Vui lòng nhập dữ liệu");
+      return;
+    }
+    if (editingId !== null) {
+      // Nếu đang ở chế độ chỉnh sửa, gọi hàm cập nhật
+      handleUpdateTodo();
+    } else {
+      // Thêm mới todo
+      setListTodo([...listTodo, { id: genIdNumber(), name: todo }]);
+      setTodo(""); // Xóa nội dung ô input
+    }
+  };
+
+  const handleUpdateTodo = () => {
+    if (editingId === null) return; // Kiểm tra nếu không có id nào đang chỉnh sửa
+
+    // Cập nhật todo dựa trên id
+    const updatedTodos = listTodo.map(item =>
+      item.id === editingId ? { ...item, name: todo } : item
+    );
+
+    setListTodo(updatedTodos);
+    setTodo("");
+    setEditingId(null); // Xóa trạng thái chỉnh sửa sau khi cập nhật
+  };
+
+  const deleteTodo = (id: number) => {
+    const newTodo = listTodo.filter(item => item.id !== id);
+    setListTodo(newTodo);
+  };
+
+  const startEditing = (item: ITodo) => {
+    setTodo(item.name); // Đưa nội dung của todo vào ô input
+    setEditingId(item.id); // Lưu id của todo đang chỉnh sửa
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={{fontSize : 50}}>Hello Word</Text>
-      <FlatList data={student}
-      keyExtractor={data => data.id + ""}
-      // Có thể sử dụng Object truyền thẳng {item} vào renderItem
-        renderItem={(data) => {
-          return (
-            <View style={styles.heads1}>
-              <Text>{data.item.name}</Text>
-            </View>
-          )
-        }}
+      {/* Header */}
+      <Text style={styles.heads}>Hello World</Text>
 
-      />
+      {/* Form - Body */}
+      <View>
+        <TextInput
+          value={todo}
+          style={styles.todoInput}
+          onChangeText={(value) => setTodo(value)}
+        />
+        <Button title={editingId ? "Update todo" : "Add todo"} onPress={handleAddTodo} />
+      </View>
 
-      {/* <ScrollView>
-        {student.map(item => {
-          return (
-            <View key={item.id} style={styles.heads1}>
-              <Text>{item.name}</Text>
-            </View>
-          )
-        })}
-      </ScrollView> */}
+      {/* List Todo App */}
+      <View>
+        <Text>List Todo:</Text>
+        <FlatList
+          data={listTodo}
+          keyExtractor={(item) => item.id + ""}
+          renderItem={({ item }) => {
+            return (
+              <Pressable
+                onPress={() => startEditing(item)}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
+                <Text style={styles.todoItem}>Kết quả: {item.name}</Text>
+                <Button title="Delete todo" onPress={() => deleteTodo(item.id)} />
+              </Pressable>
+            );
+          }}
+        />
+        <Text>Debug Info: {JSON.stringify(listTodo)}</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop : 100,
-    paddingHorizontal : 50,
+    paddingTop: 50,
     flex: 1,
     backgroundColor: "#fff",
-    // alignItems: "center",
-    // justifyContent: "center",
   },
 
-  heads1 : {
-    padding : 20,
-    backgroundColor : "pink",
-    marginBottom : 20
-  }
+  heads: {
+    padding: 20,
+    backgroundColor: "pink",
+    textAlign: "center",
+    fontSize: 50,
+  },
+
+  todoInput: {
+    borderBottomWidth: 1,
+    borderBottomColor: "green",
+    marginHorizontal: 20,
+    marginBottom: 15,
+    padding: 5,
+  },
+
+  todoItem: {
+    fontSize: 20,
+    borderWidth: 1,
+    borderStyle: "solid",
+    marginBottom: 20,
+  },
 });
